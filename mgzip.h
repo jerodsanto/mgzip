@@ -4,21 +4,21 @@
 #include "config.h"
 
 #define MAX_THREADS 32  /* abitrary - for array allocation.  */
-#define DEFAULT_COMPRESSION_LEVEL 2
+#define DEFAULT_COMPRESSION_LEVEL 6
 #define DEFAULT_THREADS 2
 #define CHUNK_SIZE 131072
 #define DEF_MEM_LEVEL 8
 
-typedef struct { 
+typedef struct {
 	int force_stdout;
 	int preserve_infile;
 	int compress_level;
-	int num_threads; 
+	int num_threads;
 	int chunk_size;
-	FILE *infile; 
+	FILE *infile;
 	FILE *outfile;
 	int num_files;
-	char **filenames; 
+	char **filenames;
 	int verbose;
 } option_type;
 
