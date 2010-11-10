@@ -1,0 +1,74 @@
+dnl Process this file with autoconf to produce a configure script.
+AC_INIT(mgzip.c)
+
+dnl Do any odd things for AIX
+AC_AIX
+if egrep "_ALL_SOURCE" confdefs.h >/dev/null 2>&1 ; then 
+	CC=cc_r
+	if test -z "$OBJECT_MODE"; then 
+		echo Please set the environment variable OBJECT_MODE=64 before configure or compiling.
+		echo You did make zlib with OBJECT_MODE=64, right?
+		exit 1
+	fi
+	CPPFLAGS="$CPPFLAGS -qmaxmem=8192 -q64"
+fi
+
+AC_ARG_WITH(zlib,
+        [  --with-zlib              point to your built zlib distribution ],
+        [	if test -z "$withval"; then 
+			echo "Specify a path to your zlib distribution:"
+			echo "./configure --with-zlib=/home/jlemle/zlib-1.1.3"
+			exit 1
+		fi
+		LIBS="-L$withval $LIBS"
+		CPPFLAGS="$CPPFLAGS -I$withval"
+        ])
+
+dnl Checks for programs.
+AC_PROG_AWK
+AC_PROG_CC
+AC_PROG_MAKE_SET
+
+dnl Checks for libraries.
+
+dnl Digital UNIX 4.0F hack:
+dnl For some reason, autoconf doesn't find pthread_create in libpthread but instead libpthreads.
+dnl this is wrong, but we are okay as long as we link with libpthread.  So hack it here by looking
+dnl for __pthread_create, which is in libpthread.
+AC_SEARCH_LIBS(__pthread_create, pthread)
+
+AC_SEARCH_LIBS(pthread_join,pthread pthreads,,[
+	echo "Can't find a POSIX threads library.  If one is actually installed,"
+	echo "please fix configure.in and submit a patch back to the maintainer."
+	echo "Thanks!"
+	exit 1
+])
+
+dnl Checks for header files.
+AC_HEADER_STDC
+AC_CHECK_HEADERS(unistd.h)
+AC_CHECK_HEADERS(zlib.h, [AC_CHECK_LIB(z, gzdopen,,[echo "libz exists but is not zlib?"; exit 1])],[
+        echo "Can't find zlib.h.  Please install zlib and run configure again."
+        echo "You can fetch zlib from http://www.info-zip.org/pub/infozip/zlib/"
+	echo "If you have zlib built but not installed you can "
+	echo "specify a path to your zlib distribution:"
+	echo "./configure --with-zlib=/home/jlemle/zlib-1.1.3"
+        exit 1
+])
+
+AC_EGREP_HEADER(sys_errlist, stdio.h, [
+  cat >> confdefs.h <<EOF
+#define HAVE_SYS_ERRLIST_DECLARED 1
+EOF])
+
+dnl Checks for typedefs, structures, and compiler characteristics.
+AC_C_BIGENDIAN
+AC_C_CONST
+
+
+dnl Checks for library functions.
+AC_FUNC_VPRINTF
+AC_CHECK_FUNCS(pthread_delay_np)
+
+AC_CONFIG_HEADER(config.h)
+AC_OUTPUT(Makefile)

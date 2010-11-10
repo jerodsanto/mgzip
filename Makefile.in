@@ -1,0 +1,60 @@
+# Makefile.in - Used by configure to generate Makefile
+
+# Note: this could be better, but it works.   If you improve it please send me the diffs. 
+
+RELEASE=1.2
+PROG=mgzip
+
+CC = @CC@
+CPPFLAGS = @CPPFLAGS@
+CFLAGS = $(CPPFLAGS) @CFLAGS@
+LDFLAGS = @LDFLAGS@
+LIBS = @LIBS@
+INSTALL = @INSTALL@
+
+DISTFILES=README COPYING ChangeLog *.in *.[ch] *.awk test_suite.sh configure Makefile.* *patch*
+DISTBASE=smp_mgzip_$(RELEASE)
+DISTTAR=$(DISTBASE).tar
+DISTDIR=/usr/tmp
+DISTHOME=/home/jlemle/jamestools/mgzip
+
+OBJS=mgzip.o queue.o die.o get_options.o
+
+all: $(PROG)
+
+$(PROG): $(OBJS)
+	$(CC) $(LDFLAGS) -o $@ $(OBJS) $(LIBS)
+
+check:	test
+
+test:	$(PROG)
+	./test_suite.sh
+
+clean:
+	rm -f $(PROG) *.o core
+
+distclean: clean
+	rm -f Makefile config.h config.status config.cache config.log
+
+dist:
+	rm -rf $(DISTDIR)/$(DISTBASE)
+	mkdir -p $(DISTDIR)/$(DISTBASE)
+	cp -pr $(DISTFILES) $(DISTDIR)/$(DISTBASE)
+	(cd $(DISTDIR); tar cfh $(DISTTAR) $(DISTBASE))
+	mv $(DISTDIR)/$(DISTTAR) $(DISTHOME)
+	rm -f $(DISTHOME)/$(DISTTAR).gz
+	gzip -9 $(DISTHOME)/$(DISTTAR)
+	rm -rf $(DISTDIR)/$(DISTBASE)
+	ls -l $(DISTHOME)/$(DISTTAR).gz
+
+# Autoconf rules
+
+Makefile config.h: Makefile.in config.status
+	./config.status
+
+config.status: configure
+	./config.status --recheck
+
+configure: configure.in
+	autoconf
+

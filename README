@@ -1,0 +1,261 @@
+!!!!!!!!!!!!!!!!!!!!!!!!!! READ THIS !!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+What this means is that I AM NOT RESPONSIBLE if this program fails
+entirely to compress your file and proceeds to erase the original.
+I AM NOT RESPONSIBLE if you choose to use this program to archive 
+your data and lose everything as a result.  I AM NOT RESPONSIBLE 
+if you suffer in any way directly or indirectly related to your 
+use or misuse of this program. 
+
+I sincerely hope none of those things happen. 
+
+!!!!!!!!!!!!!!!!!!!!!!!!!! THANK YOU !!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+mgzip -- a multi-processor capable .gz file creator.  
+Last update Feb 13, 2003  
+
+Version 1.2a fixes a bug in which a zero-length output file was 
+created for a zero-length input file.  This was causing problems
+in some automated systems that use mgzip and expect to be able 
+to gunzip the output since gunzip chokes on a zero-length input 
+file.   This has been fixed -- mgzip now creates a valid empty 
+gzip file if the input is zero-length. 
+
+-------------------------------------------------------------------
+Quick Start: 
+
+You must have a POSIX threads library on your UNIX system for this 
+software to work!  Look for a file called "libpthread*" somewhere 
+in your lib directories.  
+
+You must have "zlib" for this software to work!
+Get and build "zlib" from ftp://ftp.cdrom.com/pub/infozip/zlib.
+You don't have to install it; just make sure it compiled cleanly. 
+
+Uncompress the sources to mgzip.  
+
+I have recently tried to use GNU autoconf to automatically make
+config.h and Makefile.  Just type ./configure and this should get
+done.  If you haven't installed zlib, use the 
+--with-zlib=/path/to/your/zlib-1.1.3 as an option to ./configure.
+
+I only know this works with recent versions of AIX, Tru64 UNIX and
+Linux.  Some historical makefiles are included as a starting point
+if you can't get ./configure to work, but if you know anything about
+autoconf, please fix configure.in for your platform and send me the 
+diffs. 
+
+type "make".
+
+If that looks like it worked, type "make test".  
+
+If that looks like it worked, you are ready to install the binary. 
+
+Next, send an email message to my current email address as found 
+on http://lemley.net somewhere and tell me what kind of machine you
+are using mgzip on and any changes you had to make ;) 
+
+NOTE:  you MUST patch gzip version 1.2.4 if you don't want to lose 
+data on your large files.  This is due to a minor bug in gzip's 
+buffer handling routines when a multi-part gzip file (such as one 
+created by mgzip) has a part that ends on exactly a 32K boundary.  
+
+NOTE:  I have included the files concat.patch and 4g-patch.tar from
+http://www.gzip.org to make it easy to fix your gzip.  See the file 
+COPYING (GNU boilerplate) for redistribution details. 
+
+NOTE:  The latest gzip can be had via anonymous FTP at
+ftp://alpha.gnu.org/pub/gnu/gzip and any version after 1.2.4 does 
+not have the buffer boundary bug. 
+
+-------------------------------------------------------------------
+A little background: 
+
+The reason this program exists is that I work as a systems database 
+administrator on SMP (symmetric multi-processing) UNIX servers.  I have 
+to deal with huge amounts of fairly redundant data, and many times it 
+just makes more sense to deal with compressed files.  Much research 
+has been done by many smart people concerning ways to make compression 
+routines faster and/or tighter.  Research _may_ be happening on how to 
+parallelize (is that a word?) these routines, but I don't have access 
+to them.  
+
+Ideally, I wanted a program that could make efficient use of all the 
+CPUs I have available to compress a single file quickly.  This ideal 
+program should also create files in some industry standard and well 
+trusted format.
+
+I have not invented anything new with this program; I have simply made
+use of the primitives available to me to create a multi-threaded file 
+compression program that will compress many gigabytes of data in a 
+realistic timeframe.  
+
+-------------------------------------------------------------------
+Why the gzip format: 
+
+There exists a fine free compression library called "zlib" written by 
+Jean-loup Gailly and Mark Adler (also the authors of "gzip").  Using 
+this library, relatively little work is required to create a program 
+to compress files into gzip format.  Knowing that gzip will deal with 
+multi-part gzip files, my work was to then create a program that 
+could bust up an input file into chunks, feed those chunks to as many 
+waiting compression threads as I could create, and organize the 
+compressed chunks back into a single multi-part gzip file.  This is the
+program that does it.  
+
+NOTE:  To compile this program, you must have first compiled the
+zlib compression library.  It's home on the World Wide Web is:
+http://www.cdrom.com/pub/infozip/zlib/
+
+NOTE2:  gzip 1.2.4 has a bug that causes it to quit early on some 
+multi-part gzip files.  Normally this isn't a problem, but when 
+dealing with files comprised of thousands of gzip parts, it becomes a 
+problem.  There is a patch to the gzip 1.2.4 source tree to fix this 
+bug - it is currently available at http://www.gzip.org/concat.patch
+See the NOTE above about the latest versions of gzip.  
+
+-------------------------------------------------------------------
+About speed: 
+
+mgzip defaults to creating two worker threads.  This can be changed 
+with the -t command line parameter.  Right now, because I am lazy, 
+there is an arbitrary limit of 64 threads.  Note that performance 
+goes down somewhat if the number of worker threads far exceeds the
+number of available CPUs.  PLEASE let me know if you run this program 
+on a computer with more than 32 processors!
+
+The default compression level is 2 (gzip defaults to 7).  I chose 
+this for speed, and the fact that even at level 2 gzip does a fine 
+job of compressing my files.
+
+A quick apples to apples performance test on the 4 processor Alpha:
+
+$ ls -la /vmunix 
+-rwxr-xr-x   1 root     system   11783792 Dec  2  1998 /vmunix
+
+# running standard gzip with compression level 2 
+$ time gzip -2 < /vmunix > /dev/null
+
+real   4.3
+user   4.2
+sys    0.1
+
+# running mgzip with compression level 2 and 4 worker threads
+time ./mgzip -2 -t 4 < /vmunix > /dev/null
+
+real   1.2
+user   4.6
+sys    0.1
+
+# running mgzip with compression level 2 and 2 worker threads
+$ time mgzip -2 < /vmunix > /dev/null
+
+real   2.1
+user   4.2
+sys    0.1
+
+These are the best times of serveral runs of each program on an 
+unloaded 4 processor DEC Alpha 4100 running Digital UNIX V4.0D.  The  
+overhead of coordinating 4 threads resulted in a slightly higher user
+time for that process, but clock time was 1.2 seconds vs. 4.3 seconds 
+for stock gzip.  With the default of 2 threads, user and system times  
+were the same, but clock time was about half. 
+
+-------------------------------------------------------------------
+About compressed file size: 
+
+The files created with mgzip will be slightly larger than the files
+created with gzip for two reasons: 
+
+1) The input file is split up and potentially very many complete
+gzip files are created and concatenated to form a single output.  Each
+gzip chunk has a valid gzip header, CRC and length information. 
+
+2) Because the threads are working independently on their own chunks
+of the file, redundancy between chunks cannot be used.  While this 
+decreases the compression ratio somewhat, in practice it has not been 
+significant. 
+
+Here are the file sizes from the compression test above. 
+
+$ ls -la /vmunix
+-rwxr-xr-x   1 root     system   11783792 Dec  2  1998 /vmunix
+
+$ gzip -2 < /vmunix | wc -c
+   4847855
+compression ratio: 2.431 to 1
+
+$ mgzip -2 < /vmunix | wc -c
+   4877010
+compression ratio: 2.416 to 1
+
+-------------------------------------------------------------------
+About portability:
+
+As of August 2000, I have tested this program on the following 
+operating system/platforms:
+Digital UNIX 4.0B and 4.0D / Digital 4100 / 4CPU
+Compaq GS140 Tru64 UNIX 4.0F / Compaq GS140 / 8CPU
+AIX 4.2 / IBM SP2 / 8CPU
+AIX 4.3 / IBM S80 / 24CPU
+Linux (various versions) / Pentium Pro PC  / 2CPU
+
+The Linux port to the two processor PPro, while functional, was 
+disappointing in that it was only slightly faster (clock time) and 
+quite slower (user time) than the standard gzip that ships with RedHat 
+5.2.  I can only assume that the gzip for Intel boxes includes 
+optimized assembly routines that zlib does not include or I didn't 
+have turned on.  
+
+-------------------------------------------------------------------
+Known limitations:
+
+Due to the way gzip handles multi-part .gz files, length information 
+about the input file is not preserved, so "gzip -l file.gz" doesn't 
+return the correct information.  I don't see an obvious solution 
+to this problem.  In a future version of mgzip I may include a "-l" 
+option to get correct length information from a file created with 
+mgzip.
+
+mgzip does not store the original file name or time stamp, mainly 
+because I never use this functionality of gzip and didn't bother to 
+add it to my program.  This may be included in a future version.
+
+mgzip can't uncompress files, and gzip 1.2.4 must be patched to deal 
+with multi-part files correctly.  The patch is at 
+http://www.gzip.org/concat.patch on the gzip home page. 
+
+The queue code is generic to the point of being ugly.  Some slight 
+performance gains may be had by replacing it with something nicer.  
+I've cut some of it down as of July 1999, but it still needs work. 
+
+This program is a memory hog.  While there are no leaks that I know
+of (except on Red Hat Linux 5.1's pthread library), quite a bit of 
+memory is allocated for inter-thread communication.  If you have 
+a SMP machine though, I expect you have more than enough RAM for this 
+little program. 
+
+-------------------------------------------------------------------
+About copyright and licensing: 
+
+This program is copyright (C) 1998-2003 James Lemley.  
+
+This program uses "zlib" which is copyright (C) 1995-1998 Jean-loup 
+Gailly and Mark Adler.
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+

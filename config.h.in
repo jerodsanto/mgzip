@@ -1,0 +1,36 @@
+#ifndef CONFIG_H
+#define CONFIG_H
+/* config.h.in.  Generated automatically from configure.in by autoheader.  */
+
+/* Define to empty if the keyword does not work.  */
+#undef const
+
+/* Define if you don't have vprintf but do have _doprnt.  */
+#undef HAVE_DOPRNT
+
+/* Define if you have the vprintf function.  */
+#undef HAVE_VPRINTF
+
+/* Define if you have the ANSI C header files.  */
+#undef STDC_HEADERS
+
+/* Define if your processor stores words with the most significant
+   byte first (like Motorola and SPARC, unlike Intel and VAX).  */
+#undef WORDS_BIGENDIAN
+
+/* Define if you have the pthread_delay_np function.  */
+#undef HAVE_PTHREAD_DELAY_NP
+
+/* Define if you have the <unistd.h> header file.  */
+#undef HAVE_UNISTD_H
+
+/* Define if you have the <zlib.h> header file.  */
+#undef HAVE_ZLIB_H
+
+/* Define if you have the z library (-lz).  */
+#undef HAVE_LIBZ
+
+/* Define if sys_errlist is declared in stdio.h. */
+#undef HAVE_SYS_ERRLIST_DECLARED
+
+#endif /* ifndef CONFIG_H */
