@@ -663,9 +663,22 @@ int main(int argc, char **argv)
 	 			fclose(outfile);
 				if (infile != stdin)
 				{
-					char command[256];  /* bad bad */
-					sprintf(command, "touch -r %s %s", options->filenames[i], outfilename);
-					system(command);
+                    char invariable_command[] = "touch -r";
+					char *command;
+                    size_t command_size = strlen(options->filenames[i]) + 
+                                            strlen(outfilename) + 
+                                            strlen(invariable_command) + 2 /*+2 for space in sprintf*/
+                                            + 1; /* +1 for ending /0*/
+                    command = (char *) malloc(command_size);
+                    // reset with zeros
+                    bzero(command, command_size);                    
+					sprintf(command, "%s %s %s", invariable_command, options->filenames[i], outfilename);
+					if (0 != system(command))
+                    {
+                        free(command);
+                        die("Can't touch -r output file %s\n", outfilename);
+                    }
+                    free(command);
 				}
 	 			if (!my_preserve_infile)
 	 				unlink(options->filenames[i]);

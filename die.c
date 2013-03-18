@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <errno.h>
 #include <stdarg.h>
 #include "config.h"
@@ -17,7 +18,14 @@ void die(char *format, ...)
     va_start(parms, format);
     printf("Fatal error: ");
     vprintf(format, parms);
-    printf(errno ? " (%s)\n" : "\n", strerror(errno));
+    if (0 != errno)
+    {
+        printf(" (%s)\n", strerror(errno));
+    }
+    else
+    {
+        printf("\n");
+    }
     exit(1);
 }
 
